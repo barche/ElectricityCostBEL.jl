@@ -2,7 +2,7 @@ module ElectricityCostBEL
 
 export computecosts, dynamic_consumption, dynamic_injection, isnight
 
-using CSV, Dates
+using CSV, Dates, DataFrames
 
 const spotprices = Dict{DateTime,Float64}()
 
@@ -94,8 +94,8 @@ function spotprice(dt)
   return spotprices[dt]
 end
 
-dynamic_consumption(datetime) = (0.1*spotprice(datetime - Day(1)) + 0.204)/100 # € / kWh
-dynamic_injection(datetime) = spotprice(datetime - Day(1)) / 1000 # € /kWh
+dynamic_consumption(datetime) = (0.1*spotprice(datetime) + 0.204)/100 # € / kWh
+dynamic_injection(datetime) = spotprice(datetime) / 1000 # € /kWh
 
 function computecosts(consumptionfile, starttime, endtime, consumptionprice=dynamic_consumption, injectionprice=dynamic_injection;
     yearcosts = 335.12 + 13.39, # captar and data mgt,
@@ -103,21 +103,25 @@ function computecosts(consumptionfile, starttime, endtime, consumptionprice=dyna
     tax = 225.24/4301,
     vat = 1.06)
 
-(consumption, injection) = readkwh(consumptionfile)
+  (consumption, injection) = readkwh(consumptionfile)
 
-conscost = 0.0
-injcost = 0.0
-totcons = 0.0
-for dt in starttime:Hour(1):endtime
-  if !haskey(consumption, dt) # Skips e.g. DST hour
-    continue
+  conscost = 0.0
+  injcost = 0.0
+  totcons = 0.0
+
+  details = DataFrame(hour=DateTime[], consumption_kwh=Float64[], injection_kwh=Float64[], consumption_price=Float64[], injection_price=Float64[])
+
+  for dt in starttime:Hour(1):endtime
+    if !haskey(consumption, dt) # Skips e.g. DST hour
+      continue
+    end
+    totcons += consumption[dt]
+    conscost += consumptionprice(dt)*consumption[dt]
+    injcost += injectionprice(dt)*injection[dt]
+    push!(details, [dt, consumption[dt], injection[dt], consumptionprice(dt), injectionprice(dt)])
   end
-  totcons += consumption[dt]
-  conscost += consumptionprice(dt)*consumption[dt]
-  injcost += injectionprice(dt)*injection[dt]
-end
-conscost += yearcosts*(endtime-starttime)/Millisecond(Day(365)) + netcost*totcons + tax*totcons
-return conscost*vat, injcost
+  conscost += yearcosts*(endtime-starttime)/Millisecond(Day(365)) + netcost*totcons + tax*totcons
+  return conscost*vat, injcost, details
 end
 
 end # module ElectricityCostBEL

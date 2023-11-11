@@ -10,7 +10,7 @@ In Pkg mode (hit `]`) type:
 add https://github.com/barche/ElectricityCostBEL.jl.git
 ```
 
-Running a calculation requires a download in CSV of the meter quarter-hour values from the Fluvius site, called `kwartierwaarden-2022-2023.csv` here. You may also need to update the dynamic tariif files as needed in the source directory, obtainable from https://www.energy-charts.info/charts/price_spot_market/chart.htm?l=en&c=BE
+Running a calculation requires a download in CSV of the meter quarter-hour values from the Fluvius site, called `kwartierwaarden-2022-2023.csv` here. You may also need to update the dynamic tariff files as needed in the source directory, obtainable from https://www.energy-charts.info/charts/price_spot_market/chart.htm?l=en&c=BE
 
 Then use the package and call `computecosts` to calculate dynamic tariff costs for a chosen start and end:
 
